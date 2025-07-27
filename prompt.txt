@@ -1,0 +1,82 @@
+# Context
+I am building a project called **VoiceMap**, which analyzes speech to detect early cognitive decline (like Alzheimer’s or MCI). The goal is to create a platform that:
+
+- Processes audio in real-time during short cognitive tasks.
+- Extracts features like prosody (pitch, energy, speaking rate), fluency (pauses, hesitations), and linguistic patterns (if transcripts available).
+- Uses ML models to predict possible cognitive impairment.
+- Is designed with future clinical validation and privacy considerations.
+
+I will use datasets such as DementiaBank (ADReSSo), DementiaNet, and Vivid Mind datasets which contain `.wav` audio files organized by folders: `control/`, `dementia/`, `mci/`.
+
+---
+
+# Task
+Write a complete, modular Python project with:
+
+1. **Data loading and preprocessing:**
+    - Recursively scan through a dataset directory structured like:
+      ```
+      data/
+        dementia/
+        control/
+        mci/
+      ```
+    - For each audio file, extract:
+        - MFCCs (13 dims, mean + std)
+        - RMS energy
+        - Zero Crossing Rate
+        - Optionally spectral centroid (mean + std)
+    - Output numpy arrays `X` (features) and `y` (labels).
+
+2. **Dataset split:**
+    - Split into train/test (80/20) stratified by label.
+
+3. **ML baseline model:**
+    - Train a simple classifier: Logistic Regression or RandomForest to predict cognitive category.
+    - Print accuracy, precision, recall, and confusion matrix.
+
+4. **(Optional) Save models:**
+    - Use `joblib` to save trained model and scaler for later inference.
+
+5. **Organize as follows:**
+    - `datasets.py` → functions for loading audio files and extracting features.
+    - `train.py` → main training script with train/test split and model evaluation.
+    - `inference.py` → script to load a new `.wav` and output prediction.
+
+6. **Libraries to use:**
+    - `librosa`, `numpy`, `sklearn`, `joblib`, `matplotlib` (for confusion matrix heatmap).
+
+7. **Make sure functions are modular:**
+    - `extract_features(path) -> np.array`
+    - `load_dataset(root_dir) -> (X, y)`
+
+8. **Add brief inline comments.**
+
+---
+
+# Bonus: Additional Instructions
+- Where applicable, normalize or scale features (e.g. `StandardScaler`).
+- Provide a confusion matrix heatmap using `matplotlib`.
+- Make sure it is runnable on a local machine, assuming I have the datasets already downloaded.
+- Please generate all necessary import statements.
+
+---
+
+# Goal
+By the end, I should be able to:
+- Run `train.py` to train a baseline classifier on speech data and get performance metrics.
+- Run `inference.py new_audio.wav` to classify new patient speech recordings.
+
+---
+
+# Format
+Output your solution as three complete python files:
+- `datasets.py`
+- `train.py`
+- `inference.py`
+
+Wrap each in code fences.
+
+---
+
+Please generate this now.
