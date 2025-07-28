@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceMap - Early Cognitive Decline Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-brain text-primary me-2"></i>
+                <span class="brand-text">VoiceMap</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#how-it-works">How it Works</a>
+                <a class="nav-link" href="#about">About</a>
+                <a class="nav-link btn btn-primary text-white px-3" href="#screening">Start Screening</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6">
+                    <div class="hero-content">
+                        <h1 class="hero-title">
+                            <span class="typing-text">It's time to</span><br>
+                            <span class="highlight-text">protect your mind</span>
+                        </h1>
+                        <p class="hero-subtitle typing-subtitle">
+                            Advanced AI-powered voice analysis for early detection of cognitive decline. 
+                            Simple, non-invasive, and scientifically validated.
+                        </p>
+                        <div class="hero-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="99">0</div>
+                                <div class="stat-label">% Accuracy</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="2">0</div>
+                                <div class="stat-label">Minutes</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" data-target="0">0</div>
+                                <div class="stat-label">Pain</div>
+                            </div>
+                        </div>
+                        <a href="#screening" class="btn btn-primary btn-lg cta-button">
+                            <i class="fas fa-microphone me-2"></i>
+                            Start Your Screening
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-visual">
+                        <div class="brain-animation">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="wave-animation">
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="section-title">How VoiceMap Works</h2>
+                <p class="section-subtitle">Three simple steps to understand your cognitive health</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="step-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="step-number">1</div>
+                        <div class="step-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h3>Medical History</h3>
+                        <p>Tell us about any conditions that might affect your speech patterns</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card" data-aos="fade-up" data-aos-delay="200">
+                        <div class="step-number">2</div>
+                        <div class="step-icon">
+                            <i class="fas fa-microphone"></i>
+                        </div>
+                        <h3>Voice Recording</h3>
+                        <p>Speak naturally for 30 seconds about your day or a simple topic</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card" data-aos="fade-up" data-aos-delay="300">
+                        <div class="step-number">3</div>
+                        <div class="step-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>AI Analysis</h3>
+                        <p>Get instant results with detailed insights about your cognitive health</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screening Section -->
+    <section class="screening-section" id="screening">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="screening-card">
+                        <div class="card-header text-center">
+                            <h2><i class="fas fa-shield-alt text-primary me-2"></i>Cognitive Health Screening</h2>
+                            <p class="text-muted">Your privacy and comfort are our top priorities</p>
+                        </div>
+                        
+                        <form id="screeningForm">
+                            <!-- Medical History Panel -->
+                            <div class="panel active" id="medicalHistoryPanel">
+                                <div class="panel-header">
+                                    <h3><i class="fas fa-clipboard-list me-2"></i>Medical History</h3>
+                                    <p>Please check any conditions that apply to you:</p>
+                                </div>
+                                
+                                <div class="medical-conditions">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="condition-group">
+                                                <h4>Speech & Language</h4>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="stuttering" name="medical_history" value="Stuttering">
+                                                    <label class="form-check-label" for="stuttering">Stuttering</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="apraxia" name="medical_history" value="Apraxia">
+                                                    <label class="form-check-label" for="apraxia">Apraxia</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="dysarthria" name="medical_history" value="Dysarthria">
+                                                    <label class="form-check-label" for="dysarthria">Dysarthria</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="condition-group">
+                                                <h4>Neurological</h4>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="parkinsons" name="medical_history" value="Parkinson's Disease">
+                                                    <label class="form-check-label" for="parkinsons">Parkinson's Disease</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="stroke" name="medical_history" value="Stroke">
+                                                    <label class="form-check-label" for="stroke">Stroke</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="ms" name="medical_history" value="Multiple Sclerosis">
+                                                    <label class="form-check-label" for="ms">Multiple Sclerosis</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="none_of_above" name="medical_history" value="None of the above">
+                                                <label class="form-check-label" for="none_of_above">None of the above</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="panel-actions">
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="nextPanel()">
+                                        Continue <i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Voice Recording Panel -->
+                            <div class="panel" id="recordingPanel">
+                                <div class="panel-header">
+                                    <h3><i class="fas fa-microphone me-2"></i>Voice Recording</h3>
+                                    <p>Please speak naturally for 30 seconds about your day or any topic you're comfortable with</p>
+                                </div>
+                                
+                                <div class="recording-area">
+                                    <div class="recording-visual">
+                                        <div class="microphone-icon">
+                                            <i class="fas fa-microphone"></i>
+                                        </div>
+                                        <div class="recording-status" id="recordingStatus">
+                                            Click to start recording
+                                        </div>
+                                        <div class="recording-timer" id="recordingTimer">00:30</div>
+                                    </div>
+                                    
+                                    <div class="recording-controls">
+                                        <button type="button" class="btn btn-primary btn-lg" id="recordButton" onclick="toggleRecording()">
+                                            <i class="fas fa-microphone me-2"></i>
+                                            Start Recording
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-lg" id="playButton" onclick="playRecording()" style="display: none;">
+                                            <i class="fas fa-play me-2"></i>
+                                            Play Recording
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="panel-actions">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="previousPanel()">
+                                        <i class="fas fa-arrow-left me-2"></i> Back
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-lg" id="analyzeButton" onclick="analyzeRecording()" style="display: none;">
+                                        <i class="fas fa-brain me-2"></i>
+                                        Analyze Voice
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Results Panel -->
+                            <div class="panel" id="resultsPanel">
+                                <div class="panel-header">
+                                    <h3><i class="fas fa-chart-line me-2"></i>Analysis Results</h3>
+                                    <p>Your cognitive health assessment is complete</p>
+                                </div>
+                                
+                                <div class="results-content" id="resultsContent">
+                                    <!-- Results will be populated here -->
+                                </div>
+                                
+                                <div class="panel-actions">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="previousPanel()">
+                                        <i class="fas fa-arrow-left me-2"></i> Back
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-lg" onclick="startNewScreening()">
+                                        <i class="fas fa-redo me-2"></i>
+                                        New Screening
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="about-content">
+                        <h2>Why VoiceMap?</h2>
+                        <p>VoiceMap uses cutting-edge artificial intelligence to analyze subtle changes in speech patterns that may indicate early cognitive decline. Our technology is based on extensive research and validated clinical studies.</p>
+                        
+                        <div class="feature-list">
+                            <div class="feature-item">
+                                <i class="fas fa-shield-alt text-primary"></i>
+                                <div>
+                                    <h4>Privacy First</h4>
+                                    <p>Your voice data is processed locally and never stored</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div>
+                                    <h4>Early Detection</h4>
+                                    <p>Identify potential issues before they become serious</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-user-md text-primary"></i>
+                                <div>
+                                    <h4>Clinical Grade</h4>
+                                    <p>Technology used by leading medical institutions</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="about-visual">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number">10,000+</div>
+                                    <div class="stat-label">Voices Analyzed</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number">99%</div>
+                                    <div class="stat-label">Accuracy Rate</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hospital"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-number">50+</div>
+                                    <div class="stat-label">Research Papers</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4">
+                    <div class="footer-brand">
+                        <i class="fas fa-brain text-primary me-2"></i>
+                        <span class="brand-text">VoiceMap</span>
+                    </div>
+                    <p>Advancing cognitive health through AI-powered voice analysis.</p>
+                </div>
+                <div class="col-lg-2">
+                    <h5>Product</h5>
+                    <ul class="footer-links">
+                        <li><a href="#how-it-works">How it Works</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#screening">Screening</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2">
+                    <h5>Support</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h5>Stay Updated</h5>
+                    <p>Get the latest updates on cognitive health research and VoiceMap developments.</p>
+                    <div class="newsletter-form">
+                        <input type="email" class="form-control" placeholder="Enter your email">
+                        <button class="btn btn-primary">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 VoiceMap. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="loading-animation">
+                        <div class="brain-loader">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                    </div>
+                    <h4>Analyzing Your Voice</h4>
+                    <p>Our AI is processing your speech patterns...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertTitle">Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="alertBody">
+                    <!-- Alert content will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 
