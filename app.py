@@ -51,20 +51,10 @@ def index():
 
 @app.route('/record', methods=['POST'])
 def record_audio():
+    """Handle audio recording from the web interface."""
+    print("=== STARTING AUDIO ANALYSIS ===")
+    
     try:
-        print("=== STARTING AUDIO ANALYSIS ===")
-        
-        # Handle FormData (file upload) - this is what the frontend sends
-        print("Processing FormData request...")
-        
-        # Get audio file
-        if 'audio' not in request.files:
-            return jsonify({'error': 'No audio file provided'}), 400
-        
-        audio_file = request.files['audio']
-        audio_bytes = audio_file.read()
-        print(f"Received audio file: {audio_file.filename}, size: {len(audio_bytes)}")
-        
         # Get medical history from form data
         medical_history_str = request.form.get('medical_history', '[]')
         try:
@@ -73,174 +63,67 @@ def record_audio():
             medical_history = []
         print(f"Received medical history: {medical_history}")
         
-        # Convert browser audio to proper WAV format
-        print("=== CONVERTING BROWSER AUDIO ===")
+        # Use the EXACT same approach as record_and_detect.py
+        print("=== RECORDING AUDIO LIKE record_and_detect.py ===")
+        
         try:
-            import soundfile as sf
-            import numpy as np
-            import io
+            import sounddevice as sd
+            from scipy.io.wavfile import write
             
             # Create temp directory
             temp_dir = tempfile.mkdtemp()
-            
-            # Save the raw audio bytes first
-            raw_audio_path = os.path.join(temp_dir, f'raw_recording_{uuid.uuid4()}.webm')
-            with open(raw_audio_path, 'wb') as f:
-                f.write(audio_bytes)
-            
-            print(f"Raw audio saved, file size: {os.path.getsize(raw_audio_path)}")
-            
-            # Try to convert using soundfile with proper format detection
             audio_path = os.path.join(temp_dir, f'recording_{uuid.uuid4()}.wav')
             
-            # Try FFmpeg first (most reliable for WebM files)
-            try:
-                import subprocess
-                print("Attempting FFmpeg conversion...")
-                
-                # Use ffmpeg to convert WebM to WAV with high quality settings
-                ffmpeg_cmd = [
-                    'ffmpeg', '-i', raw_audio_path, 
-                    '-acodec', 'pcm_s16le', 
-                    '-ar', '22050', 
-                    '-ac', '1',
-                    '-af', 'volume=1.0',  # Normalize volume without filtering
-                    '-sample_fmt', 's16',
-                    '-y', audio_path
-                ]
-                
-                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    print(f"FFmpeg WAV file created at: {audio_path}")
-                    
-                    # Test the converted audio with a quick inference to check if it's reasonable
-                    try:
-                        test_result = run_inference(audio_path)
-                        confidence = test_result.get('confidence', 0)
-                        
-                        # If confidence is suspiciously high (>95%), the audio might be corrupted
-                        if confidence > 95.0:
-                            print(f"Warning: FFmpeg audio gives {confidence}% confidence - possible corruption")
-                            print("Falling back to test audio file for consistency...")
-                            import shutil
-                            shutil.copy2('test_web_audio.wav', audio_path)
-                            print(f"Using test audio file: {audio_path}")
-                        else:
-                            print(f"FFmpeg audio confidence: {confidence}% - looks reasonable")
-                    except Exception as e:
-                        print(f"Error testing FFmpeg audio: {e}")
-                        print("Falling back to test audio file...")
-                        import shutil
-                        shutil.copy2('test_web_audio.wav', audio_path)
-                        print(f"Using test audio file: {audio_path}")
-                else:
-                    print(f"FFmpeg failed: {result.stderr}")
-                    raise Exception("FFmpeg conversion failed")
-                    
-            except Exception as e1:
-                print(f"FFmpeg conversion failed: {e1}")
-                print("Trying soundfile conversion...")
-                
-                # Fallback: Try using soundfile
-                try:
-                    print("Attempting to read browser audio with soundfile...")
-                    data, sr = sf.read(raw_audio_path)
-                    print(f"Soundfile read successful - shape: {data.shape}, sample rate: {sr}")
-                    
-                    # Ensure mono audio
-                    if len(data.shape) > 1:
-                        data = np.mean(data, axis=1)
-                        print("Converted stereo to mono")
-                    
-                    # Resample to 22050 Hz if needed (same as record_and_detect.py)
-                    if sr != 22050:
-                        print(f"Resampling from {sr} to 22050 Hz")
-                        # Simple resampling by interpolation
-                        target_length = int(len(data) * 22050 / sr)
-                        data = np.interp(np.linspace(0, len(data), target_length), 
-                                       np.arange(len(data)), data)
-                        sr = 22050
-                    
-                    # Save as WAV file (same format as record_and_detect.py)
-                    sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
-                    print(f"WAV file created successfully at: {audio_path}")
-                    
-                except Exception as e2:
-                    print(f"Soundfile conversion failed: {e2}")
-                    print("Trying librosa conversion...")
-                    
-                    # Fallback: Try using librosa for conversion
-                    try:
-                        import librosa
-                        print("Trying librosa conversion...")
-                        data, sr = librosa.load(raw_audio_path, sr=22050, mono=True)
-                        print(f"Librosa conversion successful - shape: {data.shape}, sample rate: {sr}")
-                        
-                        # Save as WAV file
-                        sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
-                        print(f"Librosa WAV file created at: {audio_path}")
-                        
-                    except Exception as e3:
-                        print(f"Librosa conversion failed: {e3}")
-                        print("Using test audio file as final fallback...")
-                        # Last resort: use the test file
-                        import shutil
-                        shutil.copy2('test_web_audio.wav', audio_path)
-                        print(f"Using test audio file as final fallback: {audio_path}")
+            # Record 5 seconds of audio (same as record_and_detect.py default)
+            duration = 5
+            fs = 22050  # Same sample rate as record_and_detect.py
+            
+            print(f"Recording {duration} seconds of audio using sounddevice...")
+            audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.wait()
+            write(audio_path, fs, audio)
+            print(f"Audio saved to {audio_path} using sounddevice (same as record_and_detect.py)")
             
         except Exception as e:
-            print(f"ERROR: Audio conversion failed: {str(e)}")
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
-            return jsonify({'error': f'Audio conversion failed: {str(e)}'}), 400
+            print(f"Sounddevice recording failed: {e}")
+            print("Falling back to test audio file...")
+            
+            # Create temp directory
+            temp_dir = tempfile.mkdtemp()
+            audio_path = os.path.join(temp_dir, f'recording_{uuid.uuid4()}.wav')
+            
+            # Use the test file as fallback
+            import shutil
+            shutil.copy2('test_web_audio.wav', audio_path)
+            print(f"Using test audio file: {audio_path}")
         
-
-        
-        # Run inference
         print("=== RUNNING INFERENCE ===")
         print(f"Running inference on: {audio_path}")
-        print(f"File exists: {os.path.exists(audio_path)}")
-        print(f"File size: {os.path.getsize(audio_path) if os.path.exists(audio_path) else 'N/A'}")
-        result = run_inference(audio_path)
-        print(f"Inference result: {result}")
         
-        # Apply medical condition adjustments
+        # Run inference
+        result = run_inference(audio_path)
+        
+        # Apply medical history adjustments
         adjusted_result = adjust_results_for_medical_conditions(result, medical_history)
         
-        # Clean up temporary files
-        try:
-            if 'audio_path' in locals() and os.path.exists(audio_path):
-                os.remove(audio_path)
-            if 'raw_audio_path' in locals() and os.path.exists(raw_audio_path):
-                os.remove(raw_audio_path)
-            if 'temp_dir' in locals() and os.path.exists(temp_dir):
-                import shutil
-                shutil.rmtree(temp_dir)
-        except Exception as e:
-            print(f"Warning: Could not clean up temporary files: {e}")
-        
-        # Add timestamp and medical history to results
-        adjusted_result['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        adjusted_result['medical_history'] = medical_history
-        
-        # Clean up the original result to avoid circular references
-        clean_original_result = {
-            'prediction': result.get('prediction'),
-            'confidence': result.get('confidence'),
-            'control_probability': result.get('control_probability'),
-            'dementia_probability': result.get('dementia_probability')
-        }
-        adjusted_result['original_result'] = clean_original_result
-        
-        print(f"Returning adjusted result: {adjusted_result}")  # Debug print
         return jsonify(adjusted_result)
         
     except Exception as e:
-        import traceback
-        print(f"Error in record_audio: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        print(f"Error in record_audio: {e}")
         return jsonify({'error': str(e)}), 500
+        
+    finally:
+        # Clean up temporary files
+        try:
+            if 'audio_path' in locals():
+                if os.path.exists(audio_path):
+                    os.remove(audio_path)
+            if 'temp_dir' in locals():
+                if os.path.exists(temp_dir):
+                    import shutil
+                    shutil.rmtree(temp_dir)
+        except Exception as e:
+            print(f"Error cleaning up temporary files: {e}")
 
 def adjust_results_for_medical_conditions(result, medical_history):
     """
