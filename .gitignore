@@ -13,10 +13,10 @@ Pitt/
 Lu/
 Pitt_Cookie/
 
-# Model files (can be large)
-models/*.pt
-models/*.joblib
-models/*.pkl
+# Model files (can be large) - but needed for deployment
+# models/*.pt
+# models/*.joblib
+# models/*.pkl
 
 # Large zip files
 *.zip

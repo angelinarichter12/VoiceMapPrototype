@@ -459,4 +459,6 @@ def static_files(filename):
     return send_file(f'static/{filename}')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=8080) 
+    # Use environment variable for port (for deployment)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=False, host='0.0.0.0', port=port) 
