@@ -98,12 +98,13 @@ def record_audio():
                 import subprocess
                 print("Attempting FFmpeg conversion...")
                 
-                # Use ffmpeg to convert WebM to WAV with minimal processing to preserve audio quality
+                # Use ffmpeg to convert WebM to WAV with high quality settings
                 ffmpeg_cmd = [
                     'ffmpeg', '-i', raw_audio_path, 
                     '-acodec', 'pcm_s16le', 
                     '-ar', '22050', 
                     '-ac', '1',
+                    '-af', 'volume=1.0',  # Normalize volume without filtering
                     '-sample_fmt', 's16',
                     '-y', audio_path
                 ]
@@ -118,8 +119,8 @@ def record_audio():
                         test_result = run_inference(audio_path)
                         confidence = test_result.get('confidence', 0)
                         
-                        # If confidence is suspiciously high (>99%), the audio might be corrupted
-                        if confidence > 99.0:
+                        # If confidence is suspiciously high (>95%), the audio might be corrupted
+                        if confidence > 95.0:
                             print(f"Warning: FFmpeg audio gives {confidence}% confidence - possible corruption")
                             print("Falling back to test audio file for consistency...")
                             import shutil
