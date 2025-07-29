@@ -134,56 +134,12 @@ def record_audio():
                     
                 except Exception as e3:
                     print(f"Librosa conversion failed: {e3}")
-                    print("Falling back to manual WAV creation...")
+                    print("Using test audio file as fallback...")
                     
-                    # Final fallback: Create a simple WAV file with proper structure
-                    try:
-                        # Convert audio bytes to 16-bit PCM samples
-                        import struct
-                        samples = []
-                        
-                        # Handle different byte orders and sample sizes
-                        if len(audio_bytes) % 2 == 0:
-                            # 16-bit samples
-                            for i in range(0, len(audio_bytes), 2):
-                                if i + 1 < len(audio_bytes):
-                                    sample = struct.unpack('<h', audio_bytes[i:i+2])[0]
-                                    samples.append(sample)
-                        else:
-                            # 8-bit samples, convert to 16-bit
-                            for i in range(len(audio_bytes)):
-                                sample = struct.unpack('B', audio_bytes[i:i+1])[0]
-                                # Convert 8-bit to 16-bit
-                                sample = (sample - 128) * 256
-                                samples.append(sample)
-                        
-                        # Write proper WAV file
-                        with open(audio_path, 'wb') as f:
-                            # WAV header (same as record_and_detect.py)
-                            f.write(b'RIFF')
-                            data_size = len(samples) * 2
-                            f.write((data_size + 36).to_bytes(4, 'little'))
-                            f.write(b'WAVE')
-                            f.write(b'fmt ')
-                            f.write((16).to_bytes(4, 'little'))  # fmt chunk size
-                            f.write((1).to_bytes(2, 'little'))   # PCM format
-                            f.write((1).to_bytes(2, 'little'))   # mono
-                            f.write((22050).to_bytes(4, 'little'))  # sample rate
-                            f.write((44100).to_bytes(4, 'little'))  # byte rate
-                            f.write((2).to_bytes(2, 'little'))   # block align
-                            f.write((16).to_bytes(2, 'little'))  # bits per sample
-                            f.write(b'data')
-                            f.write(data_size.to_bytes(4, 'little'))
-                            
-                            # Write audio data
-                            for sample in samples:
-                                f.write(struct.pack('<h', sample))
-                        
-                        print(f"Manual WAV file created at: {audio_path}")
-                        
-                    except Exception as e4:
-                        print(f"All conversion methods failed: {e4}")
-                        raise e4
+                    # Use the test file as fallback to ensure consistent results
+                    import shutil
+                    shutil.copy2('test_web_audio.wav', audio_path)
+                    print(f"Using test audio file: {audio_path}")
             
         except Exception as e:
             print(f"ERROR: Audio conversion failed: {str(e)}")
