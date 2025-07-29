@@ -98,12 +98,14 @@ def record_audio():
                 import subprocess
                 print("Attempting FFmpeg conversion...")
                 
-                # Use ffmpeg to convert WebM to WAV
+                # Use ffmpeg to convert WebM to WAV with high quality settings
                 ffmpeg_cmd = [
                     'ffmpeg', '-i', raw_audio_path, 
                     '-acodec', 'pcm_s16le', 
                     '-ar', '22050', 
-                    '-ac', '1', 
+                    '-ac', '1',
+                    '-af', 'highpass=f=50,lowpass=f=8000,loudnorm=I=-16:TP=-1.5:LRA=11',  # Filter + normalize
+                    '-sample_fmt', 's16',
                     '-y', audio_path
                 ]
                 
