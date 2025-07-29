@@ -55,7 +55,7 @@ def load_cnn_model(model_path, n_mels=128, n_frames=256, n_classes=2, device=Non
     return model
 
 def predict_audio(audio_path: str, model_path: str = "models/cnn_model.pt", n_mels: int = 128, n_frames: int = 256) -> dict:
-    class_names = ['Control', 'Dementia']
+    class_names = ['Normal', 'Dementia']
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
         if not os.path.exists(audio_path):

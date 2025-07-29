@@ -141,6 +141,7 @@ def adjust_results_for_medical_conditions(result, medical_history):
         adjusted_result['adjustment_factor'] = 1.0
         adjusted_result['total_medical_impact'] = 0.0
         adjusted_result['condition_details'] = []
+        adjusted_result['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         return adjusted_result
     
     # Calculate total impact weight from medical conditions
@@ -172,25 +173,25 @@ def adjust_results_for_medical_conditions(result, medical_history):
         original_dementia_prob = result.get('dementia_probability', 0)
         adjusted_dementia_prob = original_dementia_prob * adjustment_factor
         
-        # Adjust control probability upward
-        original_control_prob = result.get('control_probability', 0)
-        adjusted_control_prob = original_control_prob + (original_dementia_prob - adjusted_dementia_prob)
+        # Adjust normal probability upward
+        original_normal_prob = result.get('normal_probability', 0)
+        adjusted_normal_prob = original_normal_prob + (original_dementia_prob - adjusted_dementia_prob)
         
         # Normalize probabilities to sum to 100%
-        total_prob = adjusted_control_prob + adjusted_dementia_prob
+        total_prob = adjusted_normal_prob + adjusted_dementia_prob
         if total_prob > 0:
-            adjusted_control_prob = (adjusted_control_prob / total_prob) * 100
+            adjusted_normal_prob = (adjusted_normal_prob / total_prob) * 100
             adjusted_dementia_prob = (adjusted_dementia_prob / total_prob) * 100
         
         # Update prediction based on adjusted probabilities
-        if adjusted_dementia_prob > adjusted_control_prob:
+        if adjusted_dementia_prob > adjusted_normal_prob:
             adjusted_result['prediction'] = 'Dementia'
             adjusted_result['confidence'] = adjusted_dementia_prob
         else:
-            adjusted_result['prediction'] = 'Control'
-            adjusted_result['confidence'] = adjusted_control_prob
+            adjusted_result['prediction'] = 'Normal'
+            adjusted_result['confidence'] = adjusted_normal_prob
         
-        adjusted_result['control_probability'] = adjusted_control_prob
+        adjusted_result['normal_probability'] = adjusted_normal_prob
         adjusted_result['dementia_probability'] = adjusted_dementia_prob
         adjusted_result['adjustment_applied'] = True
         adjusted_result['adjustment_factor'] = adjustment_factor
@@ -202,6 +203,9 @@ def adjust_results_for_medical_conditions(result, medical_history):
         adjusted_result['adjustment_factor'] = 1.0
         adjusted_result['total_medical_impact'] = 0.0
         adjusted_result['condition_details'] = []
+    
+    # Add timestamp
+    adjusted_result['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     return adjusted_result
 
@@ -231,21 +235,21 @@ def run_inference(audio_path):
         if 'Prediction: Dementia' in output:
             prediction = 'Dementia'
             confidence = extract_confidence(output, 'Dementia')
-        elif 'Prediction: Control' in output:
-            prediction = 'Control'
-            confidence = extract_confidence(output, 'Control')
+        elif 'Prediction: Normal' in output:
+            prediction = 'Normal'
+            confidence = extract_confidence(output, 'Normal')
         else:
             prediction = 'Unknown'
             confidence = 0.0
         
         # Extract class probabilities
-        control_prob = extract_probability(output, 'Control')
+        normal_prob = extract_probability(output, 'Normal')
         dementia_prob = extract_probability(output, 'Dementia')
         
         return {
             'prediction': prediction,
             'confidence': confidence,
-            'control_probability': control_prob,
+            'normal_probability': normal_prob,
             'dementia_probability': dementia_prob,
             'raw_output': output
         }
