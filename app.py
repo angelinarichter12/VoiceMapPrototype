@@ -93,75 +93,74 @@ def record_audio():
             # Try to convert using soundfile with proper format detection
             audio_path = os.path.join(temp_dir, f'recording_{uuid.uuid4()}.wav')
             
+            # Try FFmpeg first (most reliable for WebM files)
             try:
-                # Try to read the raw audio with soundfile
-                print("Attempting to read browser audio with soundfile...")
-                data, sr = sf.read(raw_audio_path)
-                print(f"Soundfile read successful - shape: {data.shape}, sample rate: {sr}")
+                import subprocess
+                print("Attempting FFmpeg conversion...")
                 
-                # Ensure mono audio
-                if len(data.shape) > 1:
-                    data = np.mean(data, axis=1)
-                    print("Converted stereo to mono")
+                # Use ffmpeg to convert WebM to WAV
+                ffmpeg_cmd = [
+                    'ffmpeg', '-i', raw_audio_path, 
+                    '-acodec', 'pcm_s16le', 
+                    '-ar', '22050', 
+                    '-ac', '1', 
+                    '-y', audio_path
+                ]
                 
-                # Resample to 22050 Hz if needed (same as record_and_detect.py)
-                if sr != 22050:
-                    print(f"Resampling from {sr} to 22050 Hz")
-                    # Simple resampling by interpolation
-                    target_length = int(len(data) * 22050 / sr)
-                    data = np.interp(np.linspace(0, len(data), target_length), 
-                                   np.arange(len(data)), data)
-                    sr = 22050
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
                 
-                # Save as WAV file (same format as record_and_detect.py)
-                sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
-                print(f"WAV file created successfully at: {audio_path}")
+                if result.returncode == 0:
+                    print(f"FFmpeg WAV file created at: {audio_path}")
+                else:
+                    print(f"FFmpeg failed: {result.stderr}")
+                    raise Exception("FFmpeg conversion failed")
+                    
+            except Exception as e1:
+                print(f"FFmpeg conversion failed: {e1}")
+                print("Trying soundfile conversion...")
                 
-            except Exception as e2:
-                print(f"Soundfile conversion failed: {e2}")
-                print("Falling back to manual conversion...")
-                
-                # Fallback: Try using librosa for conversion
+                # Fallback: Try using soundfile
                 try:
-                    import librosa
-                    print("Trying librosa conversion...")
-                    data, sr = librosa.load(raw_audio_path, sr=22050, mono=True)
-                    print(f"Librosa conversion successful - shape: {data.shape}, sample rate: {sr}")
+                    print("Attempting to read browser audio with soundfile...")
+                    data, sr = sf.read(raw_audio_path)
+                    print(f"Soundfile read successful - shape: {data.shape}, sample rate: {sr}")
                     
-                    # Save as WAV file
+                    # Ensure mono audio
+                    if len(data.shape) > 1:
+                        data = np.mean(data, axis=1)
+                        print("Converted stereo to mono")
+                    
+                    # Resample to 22050 Hz if needed (same as record_and_detect.py)
+                    if sr != 22050:
+                        print(f"Resampling from {sr} to 22050 Hz")
+                        # Simple resampling by interpolation
+                        target_length = int(len(data) * 22050 / sr)
+                        data = np.interp(np.linspace(0, len(data), target_length), 
+                                       np.arange(len(data)), data)
+                        sr = 22050
+                    
+                    # Save as WAV file (same format as record_and_detect.py)
                     sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
-                    print(f"Librosa WAV file created at: {audio_path}")
+                    print(f"WAV file created successfully at: {audio_path}")
                     
-                except Exception as e3:
-                    print(f"Librosa conversion failed: {e3}")
-                    print("Trying ffmpeg conversion...")
+                except Exception as e2:
+                    print(f"Soundfile conversion failed: {e2}")
+                    print("Trying librosa conversion...")
                     
-                    # Try using ffmpeg to convert WebM to WAV
+                    # Fallback: Try using librosa for conversion
                     try:
-                        import subprocess
+                        import librosa
+                        print("Trying librosa conversion...")
+                        data, sr = librosa.load(raw_audio_path, sr=22050, mono=True)
+                        print(f"Librosa conversion successful - shape: {data.shape}, sample rate: {sr}")
                         
-                        # Use ffmpeg to convert WebM to WAV
-                        ffmpeg_cmd = [
-                            'ffmpeg', '-i', raw_audio_path, 
-                            '-acodec', 'pcm_s16le', 
-                            '-ar', '22050', 
-                            '-ac', '1', 
-                            '-y', audio_path
-                        ]
+                        # Save as WAV file
+                        sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
+                        print(f"Librosa WAV file created at: {audio_path}")
                         
-                        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
-                        
-                        if result.returncode == 0:
-                            print(f"FFmpeg WAV file created at: {audio_path}")
-                        else:
-                            print(f"FFmpeg failed: {result.stderr}")
-                            # If ffmpeg fails, use the test file as last resort
-                            import shutil
-                            shutil.copy2('test_web_audio.wav', audio_path)
-                            print(f"Using test audio file as fallback: {audio_path}")
-                        
-                    except Exception as e4:
-                        print(f"FFmpeg conversion failed: {e4}")
+                    except Exception as e3:
+                        print(f"Librosa conversion failed: {e3}")
+                        print("Using test audio file as final fallback...")
                         # Last resort: use the test file
                         import shutil
                         shutil.copy2('test_web_audio.wav', audio_path)
