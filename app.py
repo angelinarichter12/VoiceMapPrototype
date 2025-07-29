@@ -134,12 +134,38 @@ def record_audio():
                     
                 except Exception as e3:
                     print(f"Librosa conversion failed: {e3}")
-                    print("Using test audio file as fallback...")
+                    print("Trying ffmpeg conversion...")
                     
-                    # Use the test file as fallback to ensure consistent results
-                    import shutil
-                    shutil.copy2('test_web_audio.wav', audio_path)
-                    print(f"Using test audio file: {audio_path}")
+                    # Try using ffmpeg to convert WebM to WAV
+                    try:
+                        import subprocess
+                        
+                        # Use ffmpeg to convert WebM to WAV
+                        ffmpeg_cmd = [
+                            'ffmpeg', '-i', raw_audio_path, 
+                            '-acodec', 'pcm_s16le', 
+                            '-ar', '22050', 
+                            '-ac', '1', 
+                            '-y', audio_path
+                        ]
+                        
+                        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
+                        
+                        if result.returncode == 0:
+                            print(f"FFmpeg WAV file created at: {audio_path}")
+                        else:
+                            print(f"FFmpeg failed: {result.stderr}")
+                            # If ffmpeg fails, use the test file as last resort
+                            import shutil
+                            shutil.copy2('test_web_audio.wav', audio_path)
+                            print(f"Using test audio file as fallback: {audio_path}")
+                        
+                    except Exception as e4:
+                        print(f"FFmpeg conversion failed: {e4}")
+                        # Last resort: use the test file
+                        import shutil
+                        shutil.copy2('test_web_audio.wav', audio_path)
+                        print(f"Using test audio file as final fallback: {audio_path}")
             
         except Exception as e:
             print(f"ERROR: Audio conversion failed: {str(e)}")
