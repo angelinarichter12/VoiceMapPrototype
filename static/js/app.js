@@ -362,10 +362,10 @@ class VoiceMapApp {
         const resultsContent = document.getElementById('resultsContent');
         
         // Determine result styling
-        const isControl = result.prediction === 'Control';
-        const resultClass = isControl ? 'success' : 'danger';
-        const resultIcon = isControl ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
-        const resultMessage = isControl ? 
+        const isTypical = result.prediction === 'Typical';
+        const resultClass = isTypical ? 'success' : 'danger';
+        const resultIcon = isTypical ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+        const resultMessage = isTypical ? 
             'No significant cognitive impairment detected' : 
             'Dementia indicators detected - recommend clinical evaluation';
 
@@ -380,11 +380,11 @@ class VoiceMapApp {
                 </div>
                 
                 <div class="probability-bars">
-                    <div class="probability-bar control-probability">
-                        <div class="probability-label">Control</div>
-                        <div class="probability-value text-success">${result.control_probability}%</div>
+                    <div class="probability-bar typical-probability">
+                        <div class="probability-label">Typical</div>
+                        <div class="probability-value text-success">${result.typical_probability}%</div>
                         <div class="progress">
-                            <div class="progress-bar" style="width: ${result.control_probability}%"></div>
+                            <div class="progress-bar" style="width: ${result.typical_probability}%"></div>
                         </div>
                     </div>
                     <div class="probability-bar dementia-probability">

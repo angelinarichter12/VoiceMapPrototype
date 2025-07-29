@@ -173,25 +173,25 @@ def adjust_results_for_medical_conditions(result, medical_history):
         original_dementia_prob = result.get('dementia_probability', 0)
         adjusted_dementia_prob = original_dementia_prob * adjustment_factor
         
-        # Adjust normal probability upward
-        original_normal_prob = result.get('normal_probability', 0)
-        adjusted_normal_prob = original_normal_prob + (original_dementia_prob - adjusted_dementia_prob)
+        # Adjust typical probability upward
+        original_typical_prob = result.get('typical_probability', 0)
+        adjusted_typical_prob = original_typical_prob + (original_dementia_prob - adjusted_dementia_prob)
         
         # Normalize probabilities to sum to 100%
-        total_prob = adjusted_normal_prob + adjusted_dementia_prob
+        total_prob = adjusted_typical_prob + adjusted_dementia_prob
         if total_prob > 0:
-            adjusted_normal_prob = (adjusted_normal_prob / total_prob) * 100
+            adjusted_typical_prob = (adjusted_typical_prob / total_prob) * 100
             adjusted_dementia_prob = (adjusted_dementia_prob / total_prob) * 100
         
         # Update prediction based on adjusted probabilities
-        if adjusted_dementia_prob > adjusted_normal_prob:
+        if adjusted_dementia_prob > adjusted_typical_prob:
             adjusted_result['prediction'] = 'Dementia'
             adjusted_result['confidence'] = adjusted_dementia_prob
         else:
-            adjusted_result['prediction'] = 'Normal'
-            adjusted_result['confidence'] = adjusted_normal_prob
+            adjusted_result['prediction'] = 'Typical'
+            adjusted_result['confidence'] = adjusted_typical_prob
         
-        adjusted_result['normal_probability'] = adjusted_normal_prob
+        adjusted_result['typical_probability'] = adjusted_typical_prob
         adjusted_result['dementia_probability'] = adjusted_dementia_prob
         adjusted_result['adjustment_applied'] = True
         adjusted_result['adjustment_factor'] = adjustment_factor
@@ -235,21 +235,21 @@ def run_inference(audio_path):
         if 'Prediction: Dementia' in output:
             prediction = 'Dementia'
             confidence = extract_confidence(output, 'Dementia')
-        elif 'Prediction: Normal' in output:
-            prediction = 'Normal'
-            confidence = extract_confidence(output, 'Normal')
+        elif 'Prediction: Typical' in output:
+            prediction = 'Typical'
+            confidence = extract_confidence(output, 'Typical')
         else:
             prediction = 'Unknown'
             confidence = 0.0
         
         # Extract class probabilities
-        normal_prob = extract_probability(output, 'Normal')
+        typical_prob = extract_probability(output, 'Typical')
         dementia_prob = extract_probability(output, 'Dementia')
         
         return {
             'prediction': prediction,
             'confidence': confidence,
-            'normal_probability': normal_prob,
+            'typical_probability': typical_prob,
             'dementia_probability': dementia_prob,
             'raw_output': output
         }
@@ -263,15 +263,12 @@ def extract_confidence(output, class_name):
     """Extract confidence percentage from inference output"""
     try:
         lines = output.split('\n')
-        for line in lines:
+        for i, line in enumerate(lines):
             if f'Prediction: {class_name}' in line:
-                # Look for the confidence line that follows
-                for i, line in enumerate(lines):
-                    if f'Prediction: {class_name}' in line:
-                        # Check the next line for confidence
-                        if i + 1 < len(lines) and 'Confidence:' in lines[i + 1]:
-                            confidence_str = lines[i + 1].split('Confidence:')[1].split('%')[0].strip()
-                            return float(confidence_str)
+                # Check the next line for confidence
+                if i + 1 < len(lines) and 'Confidence:' in lines[i + 1]:
+                    confidence_str = lines[i + 1].split('Confidence:')[1].split('%')[0].strip()
+                    return float(confidence_str)
         return 0.0
     except:
         return 0.0
@@ -282,8 +279,8 @@ def extract_probability(output, class_name):
         lines = output.split('\n')
         for line in lines:
             if class_name in line and '%' in line and ('████' in line or '░░░' in line):
-                # Extract the percentage from lines like "Control    ███████████████████░ 97.81%"
-                # or "Dementia   ░░░░░░░░░░░░░░░░░░░░ 2.19%"
+                # Extract the percentage from lines like "Normal     ███████████████░░░░░ 78.73%"
+                # or "Dementia   ████░░░░░░░░░░░░░░░░ 21.27%"
                 parts = line.split()
                 for part in parts:
                     if part.endswith('%'):
