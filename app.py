@@ -126,21 +126,117 @@ def record_audio():
                 print(f"ERROR: Base64 decode failed: {str(e)}")
                 return jsonify({'error': f'Invalid audio data format: {str(e)}'}), 400
         
-        # TEMPORARY FIX: Use the working audio file to test consistency
-        print("=== USING WORKING AUDIO FILE FOR TESTING ===")
+        # Convert browser audio to proper WAV format
+        print("=== CONVERTING BROWSER AUDIO ===")
         try:
+            import soundfile as sf
+            import numpy as np
+            import io
+            
             # Create temp directory
             temp_dir = tempfile.mkdtemp()
             
-            # Copy the working audio file instead of processing browser audio
-            audio_path = os.path.join(temp_dir, f'recording_{uuid.uuid4()}.wav')
-            import shutil
-            shutil.copy2('test_web_audio.wav', audio_path)
-            print(f"Using working audio file: {audio_path}")
+            # Save the raw audio bytes first
+            raw_audio_path = os.path.join(temp_dir, f'raw_recording_{uuid.uuid4()}.webm')
+            with open(raw_audio_path, 'wb') as f:
+                f.write(audio_bytes)
             
-        except Exception as e:
-            print(f"ERROR: Failed to use working audio file: {str(e)}")
-            return jsonify({'error': f'Failed to use working audio file: {str(e)}'}), 400
+            print(f"Raw audio saved, file size: {os.path.getsize(raw_audio_path)}")
+            
+            # Try to convert using soundfile with proper format detection
+            audio_path = os.path.join(temp_dir, f'recording_{uuid.uuid4()}.wav')
+            
+            try:
+                # Try to read the raw audio with soundfile
+                print("Attempting to read browser audio with soundfile...")
+                data, sr = sf.read(raw_audio_path)
+                print(f"Soundfile read successful - shape: {data.shape}, sample rate: {sr}")
+                
+                # Ensure mono audio
+                if len(data.shape) > 1:
+                    data = np.mean(data, axis=1)
+                    print("Converted stereo to mono")
+                
+                # Resample to 22050 Hz if needed (same as record_and_detect.py)
+                if sr != 22050:
+                    print(f"Resampling from {sr} to 22050 Hz")
+                    # Simple resampling by interpolation
+                    target_length = int(len(data) * 22050 / sr)
+                    data = np.interp(np.linspace(0, len(data), target_length), 
+                                   np.arange(len(data)), data)
+                    sr = 22050
+                
+                # Save as WAV file (same format as record_and_detect.py)
+                sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
+                print(f"WAV file created successfully at: {audio_path}")
+                
+            except Exception as e2:
+                print(f"Soundfile conversion failed: {e2}")
+                print("Falling back to manual conversion...")
+                
+                # Fallback: Try using librosa for conversion
+                try:
+                    import librosa
+                    print("Trying librosa conversion...")
+                    data, sr = librosa.load(raw_audio_path, sr=22050, mono=True)
+                    print(f"Librosa conversion successful - shape: {data.shape}, sample rate: {sr}")
+                    
+                    # Save as WAV file
+                    sf.write(audio_path, data, sr, format='WAV', subtype='PCM_16')
+                    print(f"Librosa WAV file created at: {audio_path}")
+                    
+                except Exception as e3:
+                    print(f"Librosa conversion failed: {e3}")
+                    print("Falling back to manual WAV creation...")
+                    
+                    # Final fallback: Create a simple WAV file with proper structure
+                    try:
+                        # Convert audio bytes to 16-bit PCM samples
+                        import struct
+                        samples = []
+                        
+                        # Handle different byte orders and sample sizes
+                        if len(audio_bytes) % 2 == 0:
+                            # 16-bit samples
+                            for i in range(0, len(audio_bytes), 2):
+                                if i + 1 < len(audio_bytes):
+                                    sample = struct.unpack('<h', audio_bytes[i:i+2])[0]
+                                    samples.append(sample)
+                        else:
+                            # 8-bit samples, convert to 16-bit
+                            for i in range(len(audio_bytes)):
+                                sample = struct.unpack('B', audio_bytes[i:i+1])[0]
+                                # Convert 8-bit to 16-bit
+                                sample = (sample - 128) * 256
+                                samples.append(sample)
+                        
+                        # Write proper WAV file
+                        with open(audio_path, 'wb') as f:
+                            # WAV header (same as record_and_detect.py)
+                            f.write(b'RIFF')
+                            data_size = len(samples) * 2
+                            f.write((data_size + 36).to_bytes(4, 'little'))
+                            f.write(b'WAVE')
+                            f.write(b'fmt ')
+                            f.write((16).to_bytes(4, 'little'))  # fmt chunk size
+                            f.write((1).to_bytes(2, 'little'))   # PCM format
+                            f.write((1).to_bytes(2, 'little'))   # mono
+                            f.write((22050).to_bytes(4, 'little'))  # sample rate
+                            f.write((44100).to_bytes(4, 'little'))  # byte rate
+                            f.write((2).to_bytes(2, 'little'))   # block align
+                            f.write((16).to_bytes(2, 'little'))  # bits per sample
+                            f.write(b'data')
+                            f.write(data_size.to_bytes(4, 'little'))
+                            
+                            # Write audio data
+                            for sample in samples:
+                                f.write(struct.pack('<h', sample))
+                        
+                        print(f"Manual WAV file created at: {audio_path}")
+                        
+                    except Exception as e4:
+                        print(f"All conversion methods failed: {e4}")
+                        raise e4
             
         except Exception as e:
             print(f"ERROR: Audio conversion failed: {str(e)}")
@@ -163,11 +259,11 @@ def record_audio():
         
         # Clean up temporary files
         try:
-            if os.path.exists(audio_path):
+            if 'audio_path' in locals() and os.path.exists(audio_path):
                 os.remove(audio_path)
-            if os.path.exists(raw_audio_path):
+            if 'raw_audio_path' in locals() and os.path.exists(raw_audio_path):
                 os.remove(raw_audio_path)
-            if os.path.exists(temp_dir):
+            if 'temp_dir' in locals() and os.path.exists(temp_dir):
                 import shutil
                 shutil.rmtree(temp_dir)
         except Exception as e:
