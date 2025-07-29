@@ -54,77 +54,24 @@ def record_audio():
     try:
         print("=== STARTING AUDIO ANALYSIS ===")
         
-        # Check if it's FormData (file upload) or JSON
-        if request.content_type and 'multipart/form-data' in request.content_type:
-            # Handle FormData (file upload)
-            print("Processing FormData request...")
-            
-            # Get audio file
-            if 'audio' not in request.files:
-                return jsonify({'error': 'No audio file provided'}), 400
-            
-            audio_file = request.files['audio']
-            audio_bytes = audio_file.read()
-            print(f"Received audio file: {audio_file.filename}, size: {len(audio_bytes)}")
-            
-            # Get medical history from form data
-            medical_history_str = request.form.get('medical_history', '[]')
-            try:
-                medical_history = json.loads(medical_history_str)
-            except json.JSONDecodeError:
-                medical_history = []
-            print(f"Received medical history: {medical_history}")
-            
-        else:
-            # Handle JSON request (legacy)
-            print("Processing JSON request...")
-            data = request.get_json()
-            if not data:
-                print("ERROR: No JSON data received")
-                return jsonify({'error': 'No JSON data received'}), 400
-            
-            print(f"Received data keys: {list(data.keys())}")
-            
-            # Check for required fields
-            if 'audio' not in data:
-                print("ERROR: No audio data received")
-                return jsonify({'error': 'No audio data received'}), 400
-            if 'medical_history' not in data:
-                print("ERROR: No medical history data received")
-                return jsonify({'error': 'No medical history data received'}), 400
-            
-            audio_data = data['audio']
-            medical_history = data['medical_history']
-            
-            print(f"Audio data type: {type(audio_data)}")
-            print(f"Audio data length: {len(audio_data) if audio_data else 'None'}")
-            print(f"Audio data starts with: {audio_data[:100] if audio_data else 'None'}")
-            
-            # Validate medical history is a list
-            if not isinstance(medical_history, list):
-                print(f"ERROR: Medical history must be a list, got {type(medical_history)}")
-                return jsonify({'error': f'Medical history must be a list, got {type(medical_history)}'}), 400
-            
-            print(f"Received medical history: {medical_history}")  # Debug print
-            
-            # Decode base64 audio data
-            print("=== DECODING BASE64 AUDIO ===")
-            try:
-                print("Splitting audio data...")
-                audio_parts = audio_data.split(',')
-                print(f"Audio parts: {len(audio_parts)}")
-                print(f"First part: {audio_parts[0][:50]}...")
-                
-                if len(audio_parts) < 2:
-                    print("ERROR: Invalid audio data format - no comma found")
-                    return jsonify({'error': 'Invalid audio data format - no comma found'}), 400
-                
-                audio_bytes = base64.b64decode(audio_parts[1])
-                print(f"Decoded audio bytes length: {len(audio_bytes)}")
-                
-            except Exception as e:
-                print(f"ERROR: Base64 decode failed: {str(e)}")
-                return jsonify({'error': f'Invalid audio data format: {str(e)}'}), 400
+        # Handle FormData (file upload) - this is what the frontend sends
+        print("Processing FormData request...")
+        
+        # Get audio file
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
+        
+        audio_file = request.files['audio']
+        audio_bytes = audio_file.read()
+        print(f"Received audio file: {audio_file.filename}, size: {len(audio_bytes)}")
+        
+        # Get medical history from form data
+        medical_history_str = request.form.get('medical_history', '[]')
+        try:
+            medical_history = json.loads(medical_history_str)
+        except json.JSONDecodeError:
+            medical_history = []
+        print(f"Received medical history: {medical_history}")
         
         # Convert browser audio to proper WAV format
         print("=== CONVERTING BROWSER AUDIO ===")
