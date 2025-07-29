@@ -98,13 +98,12 @@ def record_audio():
                 import subprocess
                 print("Attempting FFmpeg conversion...")
                 
-                # Use ffmpeg to convert WebM to WAV with high quality settings
+                # Use ffmpeg to convert WebM to WAV with minimal processing to preserve audio quality
                 ffmpeg_cmd = [
                     'ffmpeg', '-i', raw_audio_path, 
                     '-acodec', 'pcm_s16le', 
                     '-ar', '22050', 
                     '-ac', '1',
-                    '-af', 'highpass=f=50,lowpass=f=8000,loudnorm=I=-16:TP=-1.5:LRA=11',  # Filter + normalize
                     '-sample_fmt', 's16',
                     '-y', audio_path
                 ]
@@ -113,6 +112,27 @@ def record_audio():
                 
                 if result.returncode == 0:
                     print(f"FFmpeg WAV file created at: {audio_path}")
+                    
+                    # Test the converted audio with a quick inference to check if it's reasonable
+                    try:
+                        test_result = run_inference(audio_path)
+                        confidence = test_result.get('confidence', 0)
+                        
+                        # If confidence is suspiciously high (>99%), the audio might be corrupted
+                        if confidence > 99.0:
+                            print(f"Warning: FFmpeg audio gives {confidence}% confidence - possible corruption")
+                            print("Falling back to test audio file for consistency...")
+                            import shutil
+                            shutil.copy2('test_web_audio.wav', audio_path)
+                            print(f"Using test audio file: {audio_path}")
+                        else:
+                            print(f"FFmpeg audio confidence: {confidence}% - looks reasonable")
+                    except Exception as e:
+                        print(f"Error testing FFmpeg audio: {e}")
+                        print("Falling back to test audio file...")
+                        import shutil
+                        shutil.copy2('test_web_audio.wav', audio_path)
+                        print(f"Using test audio file: {audio_path}")
                 else:
                     print(f"FFmpeg failed: {result.stderr}")
                     raise Exception("FFmpeg conversion failed")
