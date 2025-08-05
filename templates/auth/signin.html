@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - VoiceMap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-brain text-primary me-2"></i>
+                <span class="brand-text">VoiceMap</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sign In Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="auth-card">
+                        <div class="auth-header text-center">
+                            <h2><i class="fas fa-sign-in-alt text-primary me-2"></i>Sign In</h2>
+                            <p class="text-muted">Welcome back to VoiceMap</p>
+                        </div>
+                        
+                        {% if not supabase_available %}
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Supabase Not Configured</h5>
+                            <p>To enable user accounts and progress tracking, you need to set up Supabase:</p>
+                            <ol>
+                                <li>Create a <a href="https://supabase.com" target="_blank">Supabase account</a></li>
+                                <li>Create a new project</li>
+                                <li>Get your project URL and API key</li>
+                                <li>Create a <code>.env</code> file in your project root with:</li>
+                            </ol>
+                            <pre><code>SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here</code></pre>
+                            <p><strong>For now, you can still use VoiceMap anonymously!</strong></p>
+                            <a href="{{ url_for('index') }}" class="btn btn-primary">Go Back to Home</a>
+                        </div>
+                        {% else %}
+                        <form id="signinForm">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="signinButton">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="auth-footer text-center mt-4">
+                            <p class="mb-3">Don't have an account?</p>
+                            <a href="{{ url_for('signup') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-user-plus me-2"></i>Sign Up Here
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alert Modal -->
+    <div class="modal fade" id="alertModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertTitle">Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="alertBody">
+                    <!-- Alert content will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('signinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const email = formData.get('email');
+            const password = formData.get('password');
+            
+            // Disable button
+            const button = document.getElementById('signinButton');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+            
+            try {
+                const response = await fetch('/auth/signin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Success', 'Signed in successfully! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    showAlert('Error', result.error || 'Failed to sign in');
+                }
+            } catch (error) {
+                showAlert('Error', 'Failed to sign in. Please try again.');
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
+            }
+        });
+        
+        function showAlert(title, message) {
+            const alertTitle = document.getElementById('alertTitle');
+            const alertBody = document.getElementById('alertBody');
+            
+            alertTitle.textContent = title;
+            alertBody.textContent = message;
+            
+            const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+            alertModal.show();
+        }
+    </script>
+</body>
+</html> 

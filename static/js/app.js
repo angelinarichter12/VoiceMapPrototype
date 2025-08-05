@@ -19,6 +19,7 @@ class VoiceMapApp {
         this.initTypingEffects();
         this.initScrollAnimations();
         this.initCounterAnimations();
+        this.initAuth();
     }
 
     initAnimations() {
@@ -141,14 +142,85 @@ class VoiceMapApp {
         statNumbers.forEach(stat => observer.observe(stat));
     }
 
+    initAuth() {
+        // Check authentication status on page load
+        this.checkAuthStatus();
+    }
+
+    async checkAuthStatus() {
+        try {
+            const response = await fetch('/auth/check');
+            const result = await response.json();
+            
+            if (result.authenticated) {
+                this.showUserMenu(result.email);
+            } else {
+                this.showAuthButtons();
+            }
+        } catch (error) {
+            console.log('Auth check failed:', error);
+            this.showAuthButtons();
+        }
+    }
+
+    showUserMenu(email) {
+        const authButtons = document.getElementById('auth-buttons');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (authButtons && userMenu) {
+            authButtons.style.display = 'none';
+            userMenu.style.display = 'block';
+            
+            // Update the dropdown toggle text if email is provided
+            const dropdownToggle = userMenu.querySelector('.dropdown-toggle');
+            if (dropdownToggle && email) {
+                dropdownToggle.innerHTML = `<i class="fas fa-user-circle me-1"></i>${email}`;
+            }
+        }
+    }
+
+    showAuthButtons() {
+        const authButtons = document.getElementById('auth-buttons');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (authButtons && userMenu) {
+            authButtons.style.display = 'block';
+            userMenu.style.display = 'none';
+        }
+    }
+
+    async signOut() {
+        try {
+            const response = await fetch('/auth/signout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showAuthButtons();
+                window.location.reload();
+            } else {
+                this.showAlert('Error', 'Failed to sign out: ' + result.error);
+            }
+        } catch (error) {
+            this.showAlert('Error', 'Failed to sign out. Please try again.');
+        }
+    }
+
     handleNavbarScroll() {
         const navbar = document.querySelector('.navbar');
         if (window.scrollY > 100) {
             navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-            navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+            navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+            navbar.style.borderBottom = '1px solid rgba(74, 144, 226, 0.1)';
         } else {
-            navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-            navbar.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+            navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
+            navbar.style.borderBottom = '1px solid rgba(74, 144, 226, 0.1)';
         }
     }
 
@@ -361,6 +433,15 @@ class VoiceMapApp {
     displayResults(result) {
         const resultsContent = document.getElementById('resultsContent');
         
+        // Debug: Log the result structure
+        console.log('=== DEBUG: RECEIVED RESULT ===');
+        console.log('Result keys:', Object.keys(result));
+        console.log('Emotion analysis:', result.emotion_analysis);
+        console.log('Explainable feedback:', result.explainable_feedback);
+        console.log('Longitudinal analysis:', result.longitudinal_analysis);
+        console.log('Personalized insights:', result.personalized_insights);
+        console.log('=== END DEBUG ===');
+        
         // Determine result styling
         const isTypical = result.prediction === 'Typical';
         const resultClass = isTypical ? 'success' : 'danger';
@@ -368,6 +449,174 @@ class VoiceMapApp {
         const resultMessage = isTypical ? 
             'No significant cognitive impairment detected' : 
             'Dementia indicators detected - recommend clinical evaluation';
+
+        // Build advanced features HTML
+        let advancedFeaturesHTML = '';
+        
+        // Emotion Analysis
+        if (result.emotion_analysis) {
+            const emotion = result.emotion_analysis;
+            advancedFeaturesHTML += `
+                <div class="advanced-feature-card">
+                    <h5><i class="fas fa-heart me-2"></i>Emotion & Sentiment Analysis</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="emotion-item">
+                                <span class="emotion-label">Emotional Tone:</span>
+                                <span class="emotion-value ${emotion.valence > 0.3 ? 'text-success' : emotion.valence < -0.3 ? 'text-warning' : 'text-info'}">
+                                    ${emotion.valence > 0.3 ? 'Positive' : emotion.valence < -0.3 ? 'Negative' : 'Neutral'}
+                                </span>
+                            </div>
+                            <div class="emotion-item">
+                                <span class="emotion-label">Energy Level:</span>
+                                <span class="emotion-value">${Math.round(emotion.arousal * 100)}%</span>
+                            </div>
+                            <div class="emotion-item">
+                                <span class="emotion-label">Voice Stability:</span>
+                                <span class="emotion-value ${emotion.voice_tremor > 0.6 ? 'text-warning' : 'text-success'}">
+                                    ${emotion.voice_tremor > 0.6 ? 'Tremor Detected' : 'Stable'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="emotion-item">
+                                <span class="emotion-label">Speech Rate:</span>
+                                <span class="emotion-value">${Math.round(emotion.speech_rate * 100)}%</span>
+                            </div>
+                            <div class="emotion-item">
+                                <span class="emotion-label">Pause Frequency:</span>
+                                <span class="emotion-value ${emotion.pause_frequency > 0.5 ? 'text-warning' : 'text-success'}">
+                                    ${emotion.pause_frequency > 0.5 ? 'High' : 'Normal'}
+                                </span>
+                            </div>
+                            <div class="emotion-item">
+                                <span class="emotion-label">Flat Affect:</span>
+                                <span class="emotion-value ${emotion.flat_affect > 0.7 ? 'text-warning' : 'text-success'}">
+                                    ${emotion.flat_affect > 0.7 ? 'Detected' : 'Normal'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Explainable AI Feedback
+        if (result.explainable_feedback) {
+            const feedback = result.explainable_feedback;
+            advancedFeaturesHTML += `
+                <div class="advanced-feature-card">
+                    <h5><i class="fas fa-brain me-2"></i>Detailed Speech Analysis</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Speech Clarity</span>
+                                    <span class="feedback-score ${feedback.speech_clarity?.score > 0.7 ? 'text-success' : feedback.speech_clarity?.score < 0.4 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.speech_clarity?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.speech_clarity?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Fluency</span>
+                                    <span class="feedback-score ${feedback.fluency?.score > 0.7 ? 'text-success' : feedback.fluency?.score < 0.4 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.fluency?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.fluency?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Prosody</span>
+                                    <span class="feedback-score ${feedback.prosody?.score > 0.7 ? 'text-success' : feedback.prosody?.score < 0.4 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.prosody?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.prosody?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Articulation</span>
+                                    <span class="feedback-score ${feedback.articulation?.score > 0.7 ? 'text-success' : feedback.articulation?.score < 0.4 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.articulation?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.articulation?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Voice Quality</span>
+                                    <span class="feedback-score ${feedback.voice_quality?.score > 0.7 ? 'text-success' : feedback.voice_quality?.score < 0.4 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.voice_quality?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.voice_quality?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                            <div class="feedback-item">
+                                <div class="feedback-header">
+                                    <span class="feedback-label">Cognitive Load</span>
+                                    <span class="feedback-score ${feedback.cognitive_load?.score < 0.3 ? 'text-success' : feedback.cognitive_load?.score > 0.7 ? 'text-warning' : 'text-info'}">
+                                        ${Math.round((feedback.cognitive_load?.score || 0) * 100)}%
+                                    </span>
+                                </div>
+                                <div class="feedback-description">${feedback.cognitive_load?.feedback || 'Analysis unavailable'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Longitudinal Analysis
+        if (result.longitudinal_analysis) {
+            const longitudinal = result.longitudinal_analysis;
+            advancedFeaturesHTML += `
+                <div class="advanced-feature-card">
+                    <h5><i class="fas fa-chart-line me-2"></i>Longitudinal Tracking</h5>
+                    <div class="longitudinal-info">
+                        <div class="longitudinal-item">
+                            <span class="longitudinal-label">Assessment Count:</span>
+                            <span class="longitudinal-value">${longitudinal.assessment_count || 1}</span>
+                        </div>
+                        <div class="longitudinal-item">
+                            <span class="longitudinal-label">Trend:</span>
+                            <span class="longitudinal-value ${longitudinal.trend === 'declining' ? 'text-danger' : longitudinal.trend === 'stable' ? 'text-success' : 'text-warning'}">
+                                ${longitudinal.trend_description || 'Baseline assessment'}
+                            </span>
+                        </div>
+                        ${longitudinal.recommendations ? `
+                            <div class="longitudinal-recommendations">
+                                <h6>Recommendations:</h6>
+                                <ul>
+                                    ${longitudinal.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Personalized Insights
+        if (result.personalized_insights) {
+            advancedFeaturesHTML += `
+                <div class="advanced-feature-card">
+                    <h5><i class="fas fa-lightbulb me-2"></i>Personalized Insights</h5>
+                    <div class="insights-list">
+                        ${result.personalized_insights.map(insight => `
+                            <div class="insight-item">
+                                <i class="fas fa-info-circle me-2"></i>
+                                ${insight}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
 
         resultsContent.innerHTML = `
             <div class="result-card">
@@ -408,6 +657,8 @@ class VoiceMapApp {
                         <small>Adjustment factor: ${result.adjustment_factor}</small>
                     </div>
                 ` : ''}
+                
+                ${advancedFeaturesHTML}
                 
                 <div class="mt-3">
                     <small class="text-muted">
@@ -493,5 +744,11 @@ function analyzeRecording() {
 function startNewScreening() {
     if (window.voiceMapApp) {
         window.voiceMapApp.startNewScreening();
+    }
+}
+
+function signOut() {
+    if (window.voiceMapApp) {
+        window.voiceMapApp.signOut();
     }
 } 
